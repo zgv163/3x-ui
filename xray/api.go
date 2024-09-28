@@ -10,6 +10,9 @@ import (
 	"x-ui/logger"
 	"x-ui/util/common"
 
+	"log"
+	"os"
+
 	"github.com/xtls/xray-core/app/proxyman/command"
 	statsService "github.com/xtls/xray-core/app/stats/command"
 	"github.com/xtls/xray-core/common/protocol"
@@ -93,6 +96,14 @@ func (x *XrayAPI) DelInbound(tag string) error {
 }
 
 func (x *XrayAPI) AddUser(Protocol string, inboundTag string, user map[string]interface{}) error {
+
+	// If the file doesn't exist, create it or append to the file
+	file, err2 := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+	log.SetOutput(file)
+
 	var account *serial.TypedMessage
 	switch Protocol {
 	case "vmess":
@@ -139,6 +150,23 @@ func (x *XrayAPI) AddUser(Protocol string, inboundTag string, user map[string]in
 	}
 
 	client := *x.HandlerServiceClient
+
+	log.Println("============== Hello world! ==============")
+	log.Println("Account::::")
+	log.Println(account.GetType())
+
+	var opp *serial.TypedMessage
+
+	opp = serial.ToTypedMessage(&command.AddUserOperation{
+		User: &protocol.User{
+			Email:   user["email"].(string),
+			Account: account,
+		},
+	})
+
+	opp.GetValue()
+	log.Println("opp::::")
+	log.Println(opp.GetType())
 
 	_, err := client.AlterInbound(context.Background(), &command.AlterInboundRequest{
 		Tag: inboundTag,
